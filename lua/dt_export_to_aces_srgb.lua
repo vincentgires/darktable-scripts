@@ -1,6 +1,8 @@
 dt = require 'darktable'
 
 local BLENDER_CONVERT_SCRIPT = os.getenv('BLENDER_USER_SCRIPTS')..'/templates_py/convert_image.py'
+local FIND_EXT_PATTERN = '^.+(%..+)$'
+local EXPORTED_EXT = '.jpg'
 
 local export_path = dt.new_widget('entry') {
   tooltip = 'target path to export file',
@@ -31,11 +33,18 @@ local function export_image(
     number, total, high_quality, extra_data)
   print('exporting '..image.filename..' '..tostring(number)..'/'..tostring(total))
 
-  -- TODO: add datetime to filename
-  print('-----------'..image.exif_datetime_taken)
+  -- add datetime to filename and set extension
+  local datetime = string.sub(image.exif_datetime_taken, 1, 10) -- keep only yyyy:mm:dd
+  datetime = string.gsub(datetime, ':', '') -- result is yyyymmdd
+  local image_extension = string.match(image.filename, FIND_EXT_PATTERN)
+  local output_filename = string.gsub(image.filename, image_extension, EXPORTED_EXT)
+  local output_path = export_path.text..'/'..datetime..'_'..output_filename
 
   -- convert exr image to jpeg
-  os.execute('blender --background --python '..BLENDER_CONVERT_SCRIPT..' -- -inputs '..filename..' -output '..export_path.text)
+  os.execute(
+    'blender --background --python '..BLENDER_CONVERT_SCRIPT
+    ..' -- -inputs '..filename
+    ..' -output '..output_path)
 
   -- set filmic module back
   apply_style('filmic aces srgb preview2', image)
