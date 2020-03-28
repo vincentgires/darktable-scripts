@@ -47,7 +47,7 @@ local function export_image(
     ..' -output '..output_path)
 
   -- set filmic module back
-  apply_style('filmic aces srgb preview2', image)
+  apply_style('filmic aces srgb rrt preview', image)
 end
 
 dt.preferences.register(
