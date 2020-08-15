@@ -7,35 +7,58 @@ local EXPORTED_EXT = '.jpg'
 
 local export_path_widget = dt.new_widget('entry') {
   tooltip = 'target path to export file',
-  text = dt.preferences.read('aces_export', 'export_path', 'string'),
-  reset_callback = function(self) self.text = '' end
-}
+  text = dt.preferences.read('aces_export', 'export_path', 'string')}
+
+local input_colorspace_label_widget = dt.new_widget('label') {
+  label = 'input colorspace'}
+
+local input_colorspace_name_widget = dt.new_widget('entry') {
+  text = 'lin_rec2020',
+  placeholder = 'colorspace'}
+
+local output_colorspace_label_widget = dt.new_widget('label') {
+  label = 'output colorspace'}
+
+local output_colorspace_name_widget = dt.new_widget('entry') {
+  text = 'out_srgb',
+  placeholder = 'colorspace'}
+
+local input_colorspace_widget = dt.new_widget('box'){
+  orientation = 'horizontal',
+  input_colorspace_label_widget,
+  input_colorspace_name_widget}
+
+local output_colorspace_widget = dt.new_widget('box'){
+  orientation = 'horizontal',
+  output_colorspace_label_widget,
+  output_colorspace_name_widget}
+
+local colorspace_widget = dt.new_widget('box'){
+  orientation = 'vertical',
+  input_colorspace_widget,
+  output_colorspace_widget}
 
 local look_name_widget = dt.new_widget('entry') {
   tooltip = 'ocio look name',
   placeholder = 'look',
   text = '',
-  editable = false,
-  reset_callback = function(self) self.text = '' end
-}
+  editable = false}
 
 local use_look_widget = dt.new_widget('check_button') {
   label = 'use look',
   value = false,
-  clicked_callback = function(self) look_name_widget.editable = self.value end
-}
+  clicked_callback = function(self) look_name_widget.editable = self.value end}
 
 local look_widget = dt.new_widget('box'){
   orientation = 'horizontal',
   use_look_widget,
-  look_name_widget
-}
+  look_name_widget}
 
 local export_widget = dt.new_widget('box'){
   orientation = 'vertical',
+  colorspace_widget,
   look_widget,
-  export_path_widget
-}
+  export_path_widget}
 
 local function apply_style(style_name, image)
   local style
@@ -68,7 +91,7 @@ local function export_image(
   local output_path = export_path_widget.text..'/'..datetime..'_'..output_filename
 
   -- convert exr image to jpeg
-  local command = 'oiiotool ' .. filename .. ' -colorconvert lin_rec2020 out_srgb'
+  local command = 'oiiotool ' .. filename .. ' -colorconvert ' .. input_colorspace_name_widget.text .. ' ' .. output_colorspace_name_widget.text
   if use_look_widget.value then command = command .. ' --ociolook ' .. look_name_widget.text end
   command = command .. ' --compression jpeg:95 -o ' .. output_path
   os.execute(command)
@@ -88,8 +111,4 @@ dt.register_storage('aces_export', 'export to aces srgb',
   nil, --finalize
   nil, --supported
   export_pre, --initialize
-  dt.new_widget('box') {
-    orientation='horizontal',
-    dt.new_widget('label'){label = 'target'},
-    export_widget}
-)
+  export_widget)
