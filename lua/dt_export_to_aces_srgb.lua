@@ -1,6 +1,7 @@
+-- TODO: add exif/metadata
+
 dt = require 'darktable'
 
-local BLENDER_CONVERT_SCRIPT = os.getenv('BLENDER_USER_SCRIPTS')..'/templates_py/convert_image.py'
 local FIND_EXT_PATTERN = '^.+(%..+)$'
 local EXPORTED_EXT = '.jpg'
 
@@ -41,10 +42,10 @@ local function export_image(
   local output_path = export_path.text..'/'..datetime..'_'..output_filename
 
   -- convert exr image to jpeg
-  os.execute(
-    'blender --background --python '..BLENDER_CONVERT_SCRIPT
-    ..' -- -inputs '..filename
-    ..' -output '..output_path)
+  local command = 'oiiotool ' .. filename .. ' -colorconvert lin_rec2020 out_srgb'
+  -- TODO if look then command = command .. ' --ociolook ' .. look end
+  command = command .. ' --compression jpeg:95 -o ' .. output_path
+  os.execute(command)
 
   -- set filmic module back
   apply_style('filmic aces srgb rrt preview', image)
