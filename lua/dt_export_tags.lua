@@ -63,19 +63,17 @@ end
 
 local export_path = dt.new_widget('entry') {
   tooltip = 'target path to export file',
-  text = '/home/'..os.getenv('USER')..'/tags.json'
-}
+  text = '/home/'..os.getenv('USER')..'/tags.json'}
 
 local export_btn = dt.new_widget('button') {
   tooltip = 'export tags to json',
   label = 'export to json',
-  clicked_callback = function(self) export_tags_as_json(export_path.text) end
-}
+  clicked_callback = function(self) export_tags_as_json(export_path.text) end}
+
 local webgallery_widget = dt.new_widget('box'){
   orientation = 'vertical',
   export_path,
-  export_btn
-}
+  export_btn}
 
 dt.register_lib('export_tags', 'export tags', true, true, {
   [dt.gui.views.lighttable] = {'DT_UI_CONTAINER_PANEL_LEFT_CENTER', 20},
