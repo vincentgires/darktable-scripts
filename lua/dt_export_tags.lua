@@ -63,8 +63,7 @@ end
 
 local export_path = dt.new_widget('entry') {
   tooltip = 'target path to export file',
-  text = '/home/'..os.getenv('USER')..'/tags.json',
-  reset_callback = function(self) self.text = '' end
+  text = '/home/'..os.getenv('USER')..'/tags.json'
 }
 
 local export_btn = dt.new_widget('button') {
