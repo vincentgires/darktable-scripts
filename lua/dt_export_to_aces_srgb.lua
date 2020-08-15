@@ -5,10 +5,36 @@ dt = require 'darktable'
 local FIND_EXT_PATTERN = '^.+(%..+)$'
 local EXPORTED_EXT = '.jpg'
 
-local export_path = dt.new_widget('entry') {
+local export_path_widget = dt.new_widget('entry') {
   tooltip = 'target path to export file',
   text = dt.preferences.read('aces_export', 'export_path', 'string'),
   reset_callback = function(self) self.text = '' end
+}
+
+local look_name_widget = dt.new_widget('entry') {
+  tooltip = 'ocio look name',
+  placeholder = 'look',
+  text = '',
+  editable = false,
+  reset_callback = function(self) self.text = '' end
+}
+
+local use_look_widget = dt.new_widget('check_button') {
+  label = 'use look',
+  value = false,
+  clicked_callback = function(self) look_name_widget.editable = self.value end
+}
+
+local look_widget = dt.new_widget('box'){
+  orientation = 'horizontal',
+  use_look_widget,
+  look_name_widget
+}
+
+local export_widget = dt.new_widget('box'){
+  orientation = 'vertical',
+  look_widget,
+  export_path_widget
 }
 
 local function apply_style(style_name, image)
@@ -39,11 +65,11 @@ local function export_image(
   datetime = string.gsub(datetime, ':', '') -- result is yyyymmdd
   local image_extension = string.match(image.filename, FIND_EXT_PATTERN)
   local output_filename = string.gsub(image.filename, image_extension, EXPORTED_EXT)
-  local output_path = export_path.text..'/'..datetime..'_'..output_filename
+  local output_path = export_path_widget.text..'/'..datetime..'_'..output_filename
 
   -- convert exr image to jpeg
   local command = 'oiiotool ' .. filename .. ' -colorconvert lin_rec2020 out_srgb'
-  -- TODO if look then command = command .. ' --ociolook ' .. look end
+  if use_look_widget.value then command = command .. ' --ociolook ' .. look_name_widget.text end
   command = command .. ' --compression jpeg:95 -o ' .. output_path
   os.execute(command)
 
@@ -65,5 +91,5 @@ dt.register_storage('aces_export', 'export to aces srgb',
   dt.new_widget('box') {
     orientation='horizontal',
     dt.new_widget('label'){label = 'target'},
-    export_path}
+    export_widget}
 )
