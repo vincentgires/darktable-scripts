@@ -7,7 +7,7 @@ local EXPORTED_EXT = '.jpg'
 
 local export_path_widget = dt.new_widget('entry') {
   tooltip = 'target path to export file',
-  text = dt.preferences.read('aces_export', 'export_path', 'string')}
+  text = dt.preferences.read('ocio_export', 'export_path', 'string')}
 
 local input_colorspace_label_widget = dt.new_widget('label') {
   label = 'input colorspace'}
@@ -54,10 +54,30 @@ local look_widget = dt.new_widget('box'){
   use_look_widget,
   look_name_widget}
 
+local pre_disable_filmic_widget = dt.new_widget('check_button') {
+  label = 'pre disable filmic',
+  value = true}
+
+local post_enable_filmic_widget = dt.new_widget('check_button') {
+  label = 'post enable filmic',
+  value = true}
+
+-- TODO: should be avoid, only on/off filmic module should be better
+-- TODO: combobox of available presets
+local post_filmic_preset_widget = dt.new_widget('entry') {
+  text = 'filmic aces srgb rrt preview'}
+
+local post_filmic_widget = dt.new_widget('box'){
+  orientation = 'horizontal',
+  post_enable_filmic_widget,
+  post_filmic_preset_widget}
+
 local export_widget = dt.new_widget('box'){
   orientation = 'vertical',
   colorspace_widget,
   look_widget,
+  pre_disable_filmic_widget,
+  post_filmic_widget,
   export_path_widget}
 
 local function apply_style(style_name, image)
@@ -73,8 +93,10 @@ end
 local function export_pre(storage, format, images, high_quality, extra_data)
   -- remove filmic module
   -- set format to linear exr (TODO)
-  for _, image in ipairs(images) do
-    apply_style('filmic off', image)
+  if pre_disable_filmic_widget.value then
+    for _, image in ipairs(images) do
+      apply_style('filmic off', image)
+    end
   end
 end
 
@@ -97,16 +119,18 @@ local function export_image(
   os.execute(command)
 
   -- set filmic module back
-  apply_style('filmic aces srgb rrt preview', image)
+  if post_enable_filmic_widget.value then
+    apply_style(post_filmic_preset_widget.text, image)
+  end
 end
 
 dt.preferences.register(
-  'aces_export', 'export_path',
-  'string', 'aces export: default export folderpath',
+  'ocio_export', 'export_path',
+  'string', 'ocio export: default export folderpath',
   'default export location',
   '/home/'..os.getenv('USER'))
 
-dt.register_storage('aces_export', 'export to aces srgb',
+dt.register_storage('ocio_export', 'export with ocio config',
   export_image, -- store
   nil, --finalize
   nil, --supported
