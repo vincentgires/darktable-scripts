@@ -100,6 +100,48 @@ local function export_pre(storage, format, images, high_quality, extra_data)
   end
 end
 
+local function table_length(t)
+  local count = 0
+  for _ in pairs(t) do count = count + 1 end
+  return count
+end
+
+local function build_json_data(tags, exifs)
+  local result = '{'
+
+  -- tags
+  result = result..'"tags"'..': ['
+  for i, tag in ipairs(tags) do
+    result = result..'"'..tag..'"'
+    if i < #tags then
+      result = result..', '
+    end
+  end
+  result = result..']'
+
+  result = result..', ' -- tags/exifs separator
+
+  -- exifs
+  result = result..'"exifs"'..': {'
+  local count = 1
+  for k, v in pairs(exifs) do
+    local value
+    if type(v) == 'number' then
+      value = v
+    elseif type(v) == 'string' then
+      value = string.format('%q', v)
+    end
+    result = result..'"'..k..'": '..value
+    if count < table_length(exifs) then
+      result = result..', '
+    end
+    count = count + 1
+  end
+  result = result..'}'
+
+  return result..'}'
+end
+
 local function export_image(
     storage, image, format, filename,
     number, total, high_quality, extra_data)
@@ -117,6 +159,35 @@ local function export_image(
   if use_look_widget.value then command = command .. ' --ociolook ' .. look_name_widget.text end
   command = command .. ' --compression jpeg:95 -o ' .. output_path
   os.execute(command)
+
+  -- tags
+  local tags = {}
+  for _, tag in ipairs(dt.tags.get_tags(image)) do
+    tag = tostring(tag)
+    if not string.find(tag, 'darktable') then
+      table.insert(tags, tag)
+    end
+  end
+
+  -- exifs
+  local exifs = {
+    maker=image.exif_maker,
+    model=image.exif_model,
+    lens=image.exif_lens,
+    aperture=image.exif_aperture,
+    exposure=image.exif_exposure,
+    focal_length=image.exif_focal_length,
+    iso=image.exif_iso,
+    datetime_taken=image.exif_datetime_taken,
+    focus_distance=image.exif_focus_distance,
+    crop=image.exif_crop}
+
+  -- export json file with tags and exifs
+  local data = build_json_data(tags, exifs)
+  local json_path = string.gsub(output_path, EXPORTED_EXT, '.json')
+  local file = io.open(json_path, 'w+')
+  file:write(data)
+  file:close()
 
   -- set filmic module back
   if post_enable_filmic_widget.value then
