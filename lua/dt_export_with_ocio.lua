@@ -54,51 +54,11 @@ local look_widget = dt.new_widget('box'){
   use_look_widget,
   look_name_widget}
 
-local pre_disable_filmic_widget = dt.new_widget('check_button') {
-  label = 'pre disable filmic',
-  value = true}
-
-local post_enable_filmic_widget = dt.new_widget('check_button') {
-  label = 'post enable filmic',
-  value = true}
-
--- TODO: should be avoid, only on/off filmic module should be better
--- TODO: combobox of available presets
-local post_filmic_preset_widget = dt.new_widget('entry') {
-  text = 'filmic aces srgb rrt preview'}
-
-local post_filmic_widget = dt.new_widget('box'){
-  orientation = 'horizontal',
-  post_enable_filmic_widget,
-  post_filmic_preset_widget}
-
 local export_widget = dt.new_widget('box'){
   orientation = 'vertical',
   colorspace_widget,
   look_widget,
-  pre_disable_filmic_widget,
-  post_filmic_widget,
   export_path_widget}
-
-local function apply_style(style_name, image)
-  local style
-  for i, s in ipairs(dt.styles) do
-    if s.name == style_name then
-      style = s
-    end
-  end
-  dt.styles.apply(style, image)
-end
-
-local function export_pre(storage, format, images, high_quality, extra_data)
-  -- remove filmic module
-  -- set format to linear exr (TODO)
-  if pre_disable_filmic_widget.value then
-    for _, image in ipairs(images) do
-      apply_style('filmic off', image)
-    end
-  end
-end
 
 local function table_length(t)
   local count = 0
@@ -189,10 +149,6 @@ local function export_image(
   file:write(data)
   file:close()
 
-  -- set filmic module back
-  if post_enable_filmic_widget.value then
-    apply_style(post_filmic_preset_widget.text, image)
-  end
 end
 
 dt.preferences.register(
@@ -205,5 +161,5 @@ dt.register_storage('ocio_export', 'export with ocio config',
   export_image, -- store
   nil, --finalize
   nil, --supported
-  export_pre, --initialize
+  nil, --initialize
   export_widget)
