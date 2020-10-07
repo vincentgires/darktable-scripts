@@ -41,12 +41,12 @@ local colorspace_widget = dt.new_widget('box'){
 local look_name_widget = dt.new_widget('entry') {
   tooltip = 'ocio look name',
   placeholder = 'look',
-  text = '',
+  text = dt.preferences.read('ocio_look', 'look', 'string'),
   editable = false}
 
 local use_look_widget = dt.new_widget('check_button') {
   label = 'use look',
-  value = false,
+  value = dt.preferences.read('ocio_use_look', 'use_look', 'bool'),
   clicked_callback = function(self) look_name_widget.editable = self.value end}
 
 local look_widget = dt.new_widget('box'){
@@ -153,10 +153,22 @@ local function export_image(
 end
 
 dt.preferences.register(
-  'ocio_export', 'export_path',
-  'string', 'ocio export: default export folderpath',
+  'ocio_export', 'export_path', 'string',
+  'ocio export: default export folderpath',
   'default export location',
   '/home/'..os.getenv('USER'))
+
+dt.preferences.register(
+  'ocio_use_look', 'use_look', 'bool',
+  'ocio export: default use look option',
+  'default use look checkbox',
+  false)
+
+dt.preferences.register(
+  'ocio_look', 'look', 'string',
+  'ocio export: default look option',
+  'default look option',
+  '')
 
 dt.register_storage('ocio_export', 'export with ocio config',
   export_image, -- store
