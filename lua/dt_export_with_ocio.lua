@@ -105,7 +105,7 @@ end
 local function export_image(
     storage, image, format, filename,
     number, total, high_quality, extra_data)
-  print('exporting '..image.filename..' '..tostring(number)..'/'..tostring(total))
+  print('exporting: '..image.filename..' '..tostring(number)..'/'..tostring(total))
 
   -- add datetime to filename and set extension
   local datetime = string.sub(image.exif_datetime_taken, 1, 10) -- keep only yyyy:mm:dd
@@ -115,9 +115,10 @@ local function export_image(
   local output_path = export_path_widget.text..'/'..datetime..'_'..output_filename
 
   -- convert exr image to jpeg
-  local command = 'oiiotool ' .. filename .. ' -colorconvert ' .. input_colorspace_name_widget.text .. ' ' .. output_colorspace_name_widget.text
-  if use_look_widget.value then command = command .. ' --ociolook ' .. look_name_widget.text end
-  command = command .. ' --compression jpeg:95 -o ' .. output_path
+  local command = 'oiiotool ' .. filename .. ' -colorconvert ' .. string.format('%q', input_colorspace_name_widget.text) .. ' ' .. string.format('%q', output_colorspace_name_widget.text)
+  if use_look_widget.value then command = command .. ' --ociolook ' .. string.format('%q', look_name_widget.text) end
+  command = command .. ' --compression jpeg:95 -o ' .. string.format('%q', output_path)
+  print('command: ' .. command)
   os.execute(command)
 
   -- tags
