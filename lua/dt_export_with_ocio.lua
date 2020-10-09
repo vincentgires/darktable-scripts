@@ -150,6 +150,9 @@ local function export_image(
   file:write(data)
   file:close()
 
+  -- delete exr file
+  os.remove(filename)
+
 end
 
 dt.preferences.register(
