@@ -145,7 +145,7 @@ local function export_image(
 
   -- export json file with tags and exifs
   local data = build_json_data(tags, exifs)
-  local json_path = string.gsub(output_path, EXPORTED_EXT, '.json')
+  local json_path = output_path .. '.json'
   local file = io.open(json_path, 'w+')
   file:write(data)
   file:close()
