@@ -115,7 +115,7 @@ local function export_image(
   local output_path = export_path_widget.text..'/'..datetime..'_'..output_filename
 
   -- convert exr image to jpeg
-  local command = 'oiiotool ' .. filename .. ' -colorconvert ' .. string.format('%q', input_colorspace_name_widget.text) .. ' ' .. string.format('%q', output_colorspace_name_widget.text)
+  local command = 'oiiotool ' .. string.format('%q', filename) .. ' -colorconvert ' .. string.format('%q', input_colorspace_name_widget.text) .. ' ' .. string.format('%q', output_colorspace_name_widget.text)
   if use_look_widget.value then command = command .. ' --ociolook ' .. string.format('%q', look_name_widget.text) end
   command = command .. ' --compression jpeg:95 -o ' .. string.format('%q', output_path)
   print('command: ' .. command)
