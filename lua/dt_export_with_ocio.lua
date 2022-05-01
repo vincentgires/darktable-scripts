@@ -54,10 +54,25 @@ local look_widget = dt.new_widget('box'){
   use_look_widget,
   look_name_widget}
 
+local external_script_label_widget = dt.new_widget('label') {
+  label = 'external script'}
+
+local external_script_path_widget = dt.new_widget('entry') {
+  tooltip = 'external script',
+  placeholder = 'look',
+  text = dt.preferences.read('ocio_export', 'external_script', 'string'),
+  editable = true}
+
+local external_script_widget = dt.new_widget('box'){
+  orientation = 'horizontal',
+  external_script_label_widget,
+  external_script_path_widget}
+
 local export_widget = dt.new_widget('box'){
   orientation = 'vertical',
   colorspace_widget,
   look_widget,
+  external_script_widget,
   export_path_widget}
 
 local function table_length(t)
@@ -153,6 +168,12 @@ local function export_image(
   -- delete exr file
   os.remove(filename)
 
+  -- execute external script
+  if external_script_path_widget.text then
+    local ext_script = external_script_path_widget.text .. ' ' .. output_path
+    print('external script: ' .. ext_script)
+    os.execute(ext_script)
+  end
 end
 
 dt.preferences.register(
@@ -171,6 +192,12 @@ dt.preferences.register(
   'ocio_export', 'look', 'string',
   'ocio export: default look option',
   'default look option',
+  '')
+
+dt.preferences.register(
+  'ocio_export', 'external_script', 'string',
+  'ocio export: default external script',
+  'default external script',
   '')
 
 dt.register_storage('ocio_export', 'export with ocio config',
