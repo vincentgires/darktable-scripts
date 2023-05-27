@@ -1,50 +1,127 @@
--- TODO: add exif/metadata
-
 dt = require 'darktable'
 
+local INPUT_TRANSFORM_DEFAULT = 'Linear Rec.2020'
+local DISPLAY_DEVICE_DEFAULT = 'sRGB - Display'
+local VIEW_TRANSFORM_DEFAULT = 'ACES 1.0 - SDR Video'
 local FIND_EXT_PATTERN = '^.+(%..+)$'
 local EXPORTED_EXT = '.jpg'
 
-local export_path_widget = dt.new_widget('entry') {
+dt.preferences.register(
+  'ocio_export', 'export_path', 'string',
+  'ocio export: default export folderpath',
+  'default export location',
+  '/home/' .. os.getenv('USER'))
+
+dt.preferences.register(
+  'ocio_export', 'input_transform', 'string',
+  'ocio export: default input transform option',
+  'default input transform option',
+  '')
+
+dt.preferences.register(
+  'ocio_export', 'use_look', 'bool',
+  'ocio export: default use look option',
+  'default use look checkbox',
+  false)
+
+dt.preferences.register(
+  'ocio_export', 'look', 'string',
+  'ocio export: default look option',
+  'default look option',
+  '')
+
+dt.preferences.register(
+  'ocio_export', 'display_device', 'string',
+  'ocio export: default display device option',
+  'default display device option',
+  '')
+
+dt.preferences.register(
+  'ocio_export', 'view_transform', 'string',
+  'ocio export: default view transform option',
+  'default view transform option',
+  '')
+
+dt.preferences.register(
+  'ocio_export', 'external_script', 'string',
+  'ocio export: default external script',
+  'default external script',
+  '')
+
+-- set default values if not set
+if dt.preferences.read('ocio_export', 'input_transform', 'string') == '' then
+  dt.preferences.write(
+    'ocio_export', 'input_transform', 'string',
+    INPUT_TRANSFORM_DEFAULT)
+end
+if dt.preferences.read('ocio_export', 'display_device', 'string') == '' then
+  dt.preferences.write(
+    'ocio_export', 'display_device', 'string',
+    DISPLAY_DEVICE_DEFAULT)
+end
+if dt.preferences.read('ocio_export', 'view_transform', 'string') == '' then
+  dt.preferences.write(
+    'ocio_export', 'view_transform', 'string',
+    VIEW_TRANSFORM_DEFAULT)
+end
+
+local export_path_widget = dt.new_widget('entry'){
   tooltip = 'target path to export file',
   text = dt.preferences.read('ocio_export', 'export_path', 'string')}
 
-local input_colorspace_label_widget = dt.new_widget('label') {
-  label = 'input colorspace'}
+local input_transform_label_widget = dt.new_widget('label'){
+  label = 'input transform'}
 
-local input_colorspace_name_widget = dt.new_widget('entry') {
-  text = 'lin_rec2020',
+local input_transform_name_widget = dt.new_widget('entry'){
+  tooltip = 'ocio input tranform name',
+  text = dt.preferences.read('ocio_export', 'input_transform', 'string'),
   placeholder = 'colorspace'}
 
-local output_colorspace_label_widget = dt.new_widget('label') {
-  label = 'output colorspace'}
+local display_device_label_widget = dt.new_widget('label'){
+  label = 'display device'}
 
-local output_colorspace_name_widget = dt.new_widget('entry') {
-  text = 'out_srgb',
+local display_device_name_widget = dt.new_widget('entry'){
+  tooltip = 'ocio display devie name',
+  text = dt.preferences.read('ocio_export', 'display_device', 'string'),
+  placeholder = 'display'}
+
+local view_transform_label_widget = dt.new_widget('label'){
+  label = 'view transform'}
+
+local view_transform_name_widget = dt.new_widget('entry'){
+  tooltip = 'ocio view transform name',
+  placeholder = 'view',
+  text = dt.preferences.read('ocio_export', 'view_transform', 'string'),
   placeholder = 'colorspace'}
 
-local input_colorspace_widget = dt.new_widget('box'){
+local input_transform_widget = dt.new_widget('box'){
   orientation = 'horizontal',
-  input_colorspace_label_widget,
-  input_colorspace_name_widget}
+  input_transform_label_widget,
+  input_transform_name_widget}
 
-local output_colorspace_widget = dt.new_widget('box'){
+local display_device_widget = dt.new_widget('box'){
   orientation = 'horizontal',
-  output_colorspace_label_widget,
-  output_colorspace_name_widget}
+  display_device_label_widget,
+  display_device_name_widget}
+
+local view_transform_widget = dt.new_widget('box'){
+  orientation = 'horizontal',
+  view_transform_label_widget,
+  view_transform_name_widget}
 
 local colorspace_widget = dt.new_widget('box'){
   orientation = 'vertical',
-  input_colorspace_widget,
-  output_colorspace_widget}
+  input_transform_widget,
+  display_device_widget,
+  view_transform_widget}
 
-local look_name_widget = dt.new_widget('entry') {
+local look_name_widget = dt.new_widget('entry'){
   tooltip = 'ocio look name',
   placeholder = 'look',
   text = dt.preferences.read('ocio_export', 'look', 'string'),
   editable = false}
 
-local use_look_widget = dt.new_widget('check_button') {
+local use_look_widget = dt.new_widget('check_button'){
   label = 'use look',
   value = dt.preferences.read('ocio_export', 'use_look', 'bool'),
   clicked_callback = function(self) look_name_widget.editable = self.value end}
@@ -54,10 +131,10 @@ local look_widget = dt.new_widget('box'){
   use_look_widget,
   look_name_widget}
 
-local external_script_label_widget = dt.new_widget('label') {
+local external_script_label_widget = dt.new_widget('label'){
   label = 'external script'}
 
-local external_script_path_widget = dt.new_widget('entry') {
+local external_script_path_widget = dt.new_widget('entry'){
   tooltip = 'external script',
   placeholder = 'look',
   text = dt.preferences.read('ocio_export', 'external_script', 'string'),
@@ -85,19 +162,19 @@ local function build_json_data(tags, exifs)
   local result = '{'
 
   -- tags
-  result = result..'"tags"'..': ['
+  result = result .. '"tags"' .. ': ['
   for i, tag in ipairs(tags) do
-    result = result..'"'..tag..'"'
+    result = result .. '"' .. tag .. '"'
     if i < #tags then
-      result = result..', '
+      result = result .. ', '
     end
   end
-  result = result..']'
+  result = result .. ']'
 
-  result = result..', ' -- tags/exifs separator
+  result = result .. ', ' -- tags/exifs separator
 
   -- exifs
-  result = result..'"exifs"'..': {'
+  result = result .. '"exifs"' .. ': {'
   local count = 1
   for k, v in pairs(exifs) do
     local value
@@ -106,33 +183,33 @@ local function build_json_data(tags, exifs)
     elseif type(v) == 'string' then
       value = string.format('%q', v)
     end
-    result = result..'"'..k..'": '..value
+    result = result .. '"' .. k .. '": ' .. value
     if count < table_length(exifs) then
-      result = result..', '
+      result = result .. ', '
     end
     count = count + 1
   end
-  result = result..'}'
+  result = result .. '}'
 
-  return result..'}'
+  return result .. '}'
 end
 
 local function export_image(
     storage, image, format, filename,
     number, total, high_quality, extra_data)
-  print('exporting: '..image.filename..' '..tostring(number)..'/'..tostring(total))
+  print('exporting: ' .. image.filename .. ' ' .. tostring(number) .. '/' .. tostring(total))
 
   -- add datetime to filename and set extension
   local datetime = string.sub(image.exif_datetime_taken, 1, 10) -- keep only yyyy:mm:dd
   datetime = string.gsub(datetime, ':', '') -- result is yyyymmdd
   local image_extension = string.match(image.filename, FIND_EXT_PATTERN)
   local output_filename = string.gsub(image.filename, image_extension, EXPORTED_EXT)
-  local output_path = export_path_widget.text..'/'..datetime..'_'..output_filename
+  local output_path = export_path_widget.text .. '/' .. datetime .. '_' .. output_filename
 
   -- convert exr image to jpeg
-  local command = 'oiiotool ' .. string.format('%q', filename) .. ' --colorconvert ' .. string.format('%q', input_colorspace_name_widget.text) .. ' ' .. string.format('%q', output_colorspace_name_widget.text)
+  local command = 'oiiotool ' .. string.format('%q', filename) .. ' --iscolorspace ' .. string.format('%q', input_transform_name_widget.text)
   if use_look_widget.value then command = command .. ' --ociolook ' .. string.format('%q', look_name_widget.text) end
-  command = command .. ' --compression jpeg:95 -o ' .. string.format('%q', output_path)
+  command = command .. ' --ociodisplay ' .. string.format('%q', display_device_name_widget.text) .. ' ' .. string.format('%q', view_transform_name_widget.text) .. ' --compression jpeg:95 -o ' .. string.format('%q', output_path)
   print('command: ' .. command)
   os.execute(command)
 
@@ -175,30 +252,6 @@ local function export_image(
     os.execute(ext_script)
   end
 end
-
-dt.preferences.register(
-  'ocio_export', 'export_path', 'string',
-  'ocio export: default export folderpath',
-  'default export location',
-  '/home/'..os.getenv('USER'))
-
-dt.preferences.register(
-  'ocio_export', 'use_look', 'bool',
-  'ocio export: default use look option',
-  'default use look checkbox',
-  false)
-
-dt.preferences.register(
-  'ocio_export', 'look', 'string',
-  'ocio export: default look option',
-  'default look option',
-  '')
-
-dt.preferences.register(
-  'ocio_export', 'external_script', 'string',
-  'ocio export: default external script',
-  'default external script',
-  '')
 
 dt.register_storage('ocio_export', 'export with ocio config',
   export_image, -- store
