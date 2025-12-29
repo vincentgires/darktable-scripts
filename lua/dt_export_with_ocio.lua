@@ -207,9 +207,15 @@ local function export_image(
   local output_path = export_path_widget.text .. '/' .. datetime .. '_' .. output_filename
 
   -- convert exr image to jpeg
-  local command = 'oiiotool ' .. string.format('%q', filename) .. ' --iscolorspace ' .. string.format('%q', input_transform_name_widget.text)
-  if use_look_widget.value then command = command .. ' --ociolook ' .. string.format('%q', look_name_widget.text) end
-  command = command .. ' --ociodisplay ' .. string.format('%q', display_device_name_widget.text) .. ' ' .. string.format('%q', view_transform_name_widget.text) .. ' --compression jpeg:95 -o ' .. string.format('%q', output_path)
+  -- old: with oiiotool, issue with ACES 2.0
+  -- local command = 'oiiotool ' .. string.format('%q', filename) .. ' --iscolorspace ' .. string.format('%q', input_transform_name_widget.text)
+  -- if use_look_widget.value then command = command .. ' --ociolook ' .. string.format('%q', look_name_widget.text) end
+  -- command = command .. ' --ociodisplay ' .. string.format('%q', display_device_name_widget.text) .. ' ' .. string.format('%q', view_transform_name_widget.text) .. ' --compression jpeg:95 -o ' .. string.format('%q', output_path)
+  -- now with blender:
+  local command = 'blender --background --python ' .. os.getenv('BLENDER_USER_SCRIPTS') .. '/templates_py/convert_image.py --'
+  command = command .. ' --input-path ' .. string.format('%q', filename) .. ' --input-colorspace ' .. string.format('%q', input_transform_name_widget.text)
+  if use_look_widget.value then command = command .. ' --look ' .. string.format('%q', look_name_widget.text) end
+  command = command .. ' --display-view ' .. string.format('%q', display_device_name_widget.text) .. ' ' .. string.format('%q', view_transform_name_widget.text) .. ' --file-format JPEG --color-mode RGB --compression 95 --output-path ' .. string.format('%q', output_path)
   print('command: ' .. command)
   os.execute(command)
 
